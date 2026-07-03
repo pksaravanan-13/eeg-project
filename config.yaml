@@ -1,0 +1,29 @@
+paths:
+  raw_data: data/raw
+  processed_data: data/processed
+  results: results
+  figures: results/figures
+  reports: results/reports
+
+recording:
+  sfreq: 256          # sampling frequency in Hz
+  n_channels: 64      # number of EEG channels
+
+preprocessing:
+  bandpass:
+    l_freq: 1.0       # low cutoff Hz
+    h_freq: 40.0      # high cutoff Hz
+  notch_freq: 60.0    # power line noise Hz (US = 60, EU = 50)
+  epoch_tmin: -0.2    # seconds before event
+  epoch_tmax: 0.8     # seconds after event
+
+analysis:
+  frequency_bands:
+    delta: [1, 4]
+    theta: [4, 8]
+    alpha: [8, 13]
+    beta:  [13, 30]
+    gamma: [30, 40]
+
+subjects:
+  - sub-01
