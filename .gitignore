@@ -235,3 +235,7 @@ graphify-out/
 
 # External data
 data/external/
+
+# Personal curriculum notes, not part of the pipeline
+docs/
+VIDEOS.md
