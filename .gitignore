@@ -216,3 +216,22 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# EEG data files (can be large — store externally or in data/raw/)
+data/raw/
+data/processed/
+*.edf
+*.bdf
+*.gdf
+*.fif
+*.set
+*.cnt
+*.vhdr
+*.vmrk
+*.eeg
+
+# graphify knowledge graph build artifacts
+graphify-out/
+
+# External data
+data/external/
