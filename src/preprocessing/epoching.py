@@ -1,6 +1,6 @@
 import mne
 
-def make_epochs(raw: mne.io.Raw, tmin: float, tmax: float) -> mne.Epochs:
+def make_epochs(raw: mne.io.Raw, tmin: float, tmax: float, baseline: tuple = (None, 0),) -> mne.Epochs:
     events = mne.find_events(raw, stim_channel='STI 014')
     event_id = {
         'auditory/left': 1,
@@ -17,5 +17,6 @@ def make_epochs(raw: mne.io.Raw, tmin: float, tmax: float) -> mne.Epochs:
         event_id,
         tmin=tmin,
         tmax=tmax,
+        baseline=baseline,
         preload=True,
     )
