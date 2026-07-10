@@ -11,6 +11,16 @@ def make_epochs(raw: mne.io.Raw, tmin: float, tmax: float, baseline: tuple = (No
         'buttonpress': 32,
     }
 
+def summarize_epochs(epochs: mne.Epochs) -> None:
+    n_events = len(epochs.drop_log)
+    n_kept = len(epochs)
+    n_dropped = n_events - n_kept
+    print(f"Events found : {n_events}")
+    print(f"Epochs kept  : {n_kept}")
+    print(f"Epochs dropped : {n_dropped}")
+    if n_dropped > 0:
+        print("Sample drop reasons:", [r for r in epochs.drop_log if r][:3])
+
     return mne.Epochs(
         raw,
         events,
@@ -20,3 +30,4 @@ def make_epochs(raw: mne.io.Raw, tmin: float, tmax: float, baseline: tuple = (No
         baseline=baseline,
         preload=True,
     )
+
