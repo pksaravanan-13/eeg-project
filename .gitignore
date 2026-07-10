@@ -239,3 +239,6 @@ data/external/
 # Personal curriculum notes, not part of the pipeline
 docs/
 VIDEOS.md
+
+# Claude Code local-machine settings (contains local absolute paths)
+.claude/settings.local.json
