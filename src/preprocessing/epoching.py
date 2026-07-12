@@ -1,15 +1,25 @@
 import mne
 
-def make_epochs(raw: mne.io.Raw, tmin: float, tmax: float, baseline: tuple = (None, 0),) -> mne.Epochs:
-    events = mne.find_events(raw, stim_channel='STI 014')
-    event_id = {
-        'auditory/left': 1,
-        'auditory/right': 2,
-        'visual/left': 3,
-        'visual/right': 4,
-        'smiley': 5,
-        'buttonpress': 32,
-    }
+DEFAULT_EVENT_ID = {
+    'auditory/left': 1,
+    'auditory/right': 2,
+    'visual/left': 3,
+    'visual/right': 4,
+    'smiley': 5,
+    'buttonpress': 32,
+}
+
+def make_epochs(
+    raw: mne.io.Raw,
+    tmin: float,
+    tmax: float,
+    baseline: tuple = (None, 0),
+    event_id: dict = None,
+    stim_channel: str = 'STI 014',
+) -> mne.Epochs:
+    if event_id is None:
+        event_id = DEFAULT_EVENT_ID
+    events = mne.find_events(raw, stim_channel=stim_channel)
 
     return mne.Epochs(
         raw,

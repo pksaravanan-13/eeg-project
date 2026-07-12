@@ -5,6 +5,31 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "eeg-project"
 version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "mne>=1.12,<2",
+    "numpy>=2.5,<3",
+    "pandas>=3.0,<4",
+    "scipy>=1.18,<2",
+    "matplotlib>=3.11,<4",
+    "seaborn>=0.13,<0.14",
+    "PyYAML>=6.0,<7",
+    "jupyter>=1.1,<2",
+    "scikit-learn>=1.5,<2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<9",
+    "pytest-cov>=5,<6",
+]
 
 [tool.setuptools.packages.find]
 include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: requires network access / large dataset download",
+]
+addopts = "-m 'not slow'"

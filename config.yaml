@@ -5,10 +5,6 @@ paths:
   figures: results/figures
   reports: results/reports
 
-recording:
-  sfreq: 256          # sampling frequency in Hz
-  n_channels: 64      # number of EEG channels
-
 preprocessing:
   bandpass:
     l_freq: 1.0       # low cutoff Hz
