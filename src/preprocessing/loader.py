@@ -3,9 +3,13 @@ from pathlib import Path
 
 def load_raw(file_path: str, preload: bool = True) -> mne.io.Raw:
     path = Path(file_path)
-    if path.suffix == ".fif":
+    if not path.exists():
+        raise FileNotFoundError(f"Raw EEG file not found: {path}")
+
+    suffix = path.suffix.lower()
+    if suffix == ".fif":
         raw = mne.io.read_raw_fif(file_path, preload=preload)
-    elif path.suffix == ".edf":
+    elif suffix == ".edf":
         raw = mne.io.read_raw_edf(file_path, preload=preload)
     else:
         raise ValueError(f"Unsupported file format: {path.suffix}")

@@ -1,8 +1,4 @@
-mne
-numpy
-pandas
-scipy
-matplotlib
-seaborn
-jupyter
-scikit-learn
+# Dependencies are declared in pyproject.toml (single source of truth).
+# Install the project (with dev/test tooling) via:
+#   pip install -e ".[dev]"
+-e .[dev]
