@@ -242,3 +242,7 @@ VIDEOS.md
 
 # Claude Code local-machine settings (contains local absolute paths)
 .claude/settings.local.json
+
+# AI tooling config, not part of the EEG pipeline itself
+.claude/settings.json
+CLAUDE.md
