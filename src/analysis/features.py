@@ -46,3 +46,23 @@ def compute_tfr(epochs: mne.Epochs, freqs: np.ndarray, n_cycles: int = 7) -> mne
     return tfr_morlet(epochs, freqs=freqs, n_cycles=n_cycles, return_itc=False)
     # return_itc=False: ITC (phase consistency across trials) is a separate
     # question from power, computed via its own return_itc=True call in the notebook.
+
+
+def compute_itc(epochs: mne.Epochs, freqs: np.ndarray = None) -> mne.time_frequency.AverageTFR:
+    # ITC has to be computed from epochs, not an averaged Evoked: averaging
+    # collapses the trial dimension, and per-trial phase is exactly what's
+    # being compared here -- once the trials are gone there's nothing left
+    # to check for agreement.
+    if freqs is None:
+        freqs = np.arange(4, 40, 1)  # same range compute_tfr() defaults its callers to, so power and ITC line up cell-for-cell
+
+    n_cycles = 7  # same as compute_tfr() -- keeps both at identical time/frequency resolution
+
+    # tfr_morlet tracks the full complex wavelet coefficient per trial when
+    # return_itc=True, then averages unit-length phase vectors across
+    # trials at each time-frequency point (see compute_tfr's power path for
+    # the same wavelets used without phase tracking). The result is bounded
+    # in [0, 1]: 1 means every trial had the same phase at that point, 0
+    # means phase was uniformly random across trials.
+    power, itc = tfr_morlet(epochs, freqs=freqs, n_cycles=n_cycles, return_itc=True)
+    return itc
