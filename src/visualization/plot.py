@@ -37,6 +37,14 @@ def plot_tfr(power: mne.time_frequency.AverageTFR, baseline: tuple, mode: str = 
     _save_or_show(fig, out_path)
 
 
+def plot_itc(itc: mne.time_frequency.AverageTFR, fmin: float = 4.0, fmax: float = 40.0, out_path: str = None) -> None:
+    fig = itc.plot(fmin=fmin, fmax=fmax, combine="mean", show=False)[0]
+    # combine="mean" collapses the picked channels into one figure, so
+    # plot() returns a one-element list -- [0] unwraps it to the single
+    # fig _save_or_show() expects.
+    _save_or_show(fig, out_path)
+
+
 def _save_or_show(fig, out_path: str) -> None:
     if out_path:
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
