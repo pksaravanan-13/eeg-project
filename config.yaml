@@ -12,6 +12,9 @@ preprocessing:
   notch_freq: 60.0    # power line noise Hz (US = 60, EU = 50)
   epoch_tmin: -0.2    # seconds before event
   epoch_tmax: 0.8     # seconds after event
+  ica:
+    n_components: 20   # see src/preprocessing/ica.py docstring for the channel-count rationale
+    random_state: 42   # fixed seed -- reproducible decomposition run to run
 
 analysis:
   frequency_bands:

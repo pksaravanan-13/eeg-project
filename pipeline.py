@@ -10,6 +10,7 @@ import mne
 
 from src.preprocessing.filter import load_raw, apply_filters, make_epochs, save_processed
 from src.preprocessing.artifacts import mark_bad_channels, reject_by_amplitude, log_rejection
+from src.preprocessing.ica import fit_ica, auto_detect_eog, apply_ica
 from src.analysis.features import band_power, compute_erp, compute_tfr
 from src.visualization.plot import plot_erp, plot_topomap, plot_psd
 
@@ -80,6 +81,7 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
         "epoch_tmax": pp["epoch_tmax"],
         "bad_channels": sorted(bad_channels),
         "reject_thresh": REJECT_THRESH,
+        "ica": pp["ica"],
     }
     input_hash = _hash_file(raw_file)
 
@@ -95,6 +97,12 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
         epochs = make_epochs(raw, pp["epoch_tmin"], pp["epoch_tmax"])
         epochs_clean = reject_by_amplitude(epochs, REJECT_THRESH)
         log_rejection(epochs, epochs_clean)
+
+        # ICA runs after amplitude rejection so its decomposition isn't spent
+        # fitting components to trials that were always getting thrown out.
+        ica = fit_ica(epochs_clean, n_components=pp["ica"]["n_components"], random_state=pp["ica"]["random_state"])
+        eog_indices = auto_detect_eog(ica, epochs_clean)
+        epochs_clean = apply_ica(ica, epochs_clean, exclude=eog_indices)
 
         save_processed(epochs_clean, str(processed_path))
         _write_provenance(processed_path, current_params, input_hash, raw_file)
