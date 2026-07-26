@@ -13,7 +13,7 @@ from src.preprocessing.artifacts import mark_bad_channels, reject_by_amplitude, 
 from src.preprocessing.ica import fit_ica, auto_detect_eog, apply_ica
 from src.analysis.features import band_power, compute_erp, compare_conditions, compute_tfr, compute_itc
 from src.analysis.classifier import extract_band_power_features, decode_with_lda
-from src.visualization.plot import plot_erp, plot_topomap, plot_psd
+from src.visualization.plot import plot_erp, plot_topomap, plot_psd, plot_tfr, plot_itc
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +139,8 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
         "erp": (fig_dir / f"{subject}_erp.png", lambda p: plot_erp(erp, out_path=str(p))),
         "topo": (fig_dir / f"{subject}_topo.png", lambda p: plot_topomap(erp, times=[0.1, 0.2, 0.3], out_path=str(p))),
         "psd": (fig_dir / f"{subject}_psd.png", lambda p: plot_psd(epochs_clean, out_path=str(p))),
+        "tfr": (fig_dir / f"{subject}_tfr.png", lambda p: plot_tfr(tfr, baseline=(None, 0), out_path=str(p))),
+        "itc": (fig_dir / f"{subject}_itc.png", lambda p: plot_itc(itc, out_path=str(p))),
     }
     for name, (fig_path, plot_fn) in fig_specs.items():
         if force or _figure_is_stale(fig_path, processed_path):

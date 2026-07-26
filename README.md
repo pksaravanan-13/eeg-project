@@ -18,6 +18,8 @@ skills used in BCI/neurotech research and engineering roles.
 - [Running the Pipeline](#running-the-pipeline)
 - [Dataset](#dataset)
 - [Testing](#testing)
+- [Results Walkthrough](#results-walkthrough)
+- [What I Learned](#what-i-learned)
 
 ## What this is and why it exists
 
@@ -142,3 +144,102 @@ conditions to decode.
 pytest              # fast suite (synthetic EEG data, no downloads)
 pytest -m slow       # add the end-to-end test against the real MNE sample dataset
 ```
+
+## Results Walkthrough
+
+A single confirmed end-to-end run (`sub-01`, MNE sample dataset) through every pipeline stage,
+in order:
+
+### 1. Filtering
+
+![PSD before and after filtering](results/figures/psd_before_after.png)
+
+The notch + bandpass stage removes power-line hum and out-of-band drift — the 1–40 Hz passband
+edges are visible as sharp transitions, with power outside that range dropping off steeply.
+
+### 2. Cleaned epochs (artifact rejection + ICA)
+
+320 events were found on the stimulus channel; amplitude rejection (150 µV peak-to-peak
+threshold) dropped 31 of them (9.7%) as gross whole-trial contamination, leaving 289 epochs.
+ICA was then fit on the survivors and automatically identified two components correlating with
+the real EOG channel, which were removed — a targeted correction rather than discarding those
+trials outright.
+
+### 3. Event-related potential
+
+![ERP waveform](results/figures/sub-01_erp.png)
+![ERP topography at 0.1s, 0.2s, 0.3s](results/figures/sub-01_topo.png)
+
+The averaged EEG response (top panel of the waveform plot) shows a clear early deflection
+around 100 ms post-stimulus and a larger, broader deflection between roughly 150–250 ms —
+consistent with an early sensory response followed by a later cognitive/attention-related
+component. The topography at 0.1 s shows the response concentrated over left-frontal
+electrodes, spreading and changing polarity by 0.2–0.3 s.
+
+### 4. Time-frequency power (TFR)
+
+![Time-frequency power](results/figures/sub-01_tfr.png)
+
+Power relative to the pre-stimulus baseline (log-ratio), across 4–39 Hz. The strongest,
+most consistent increase sits in the low frequencies (below ~15 Hz) shortly after stimulus
+onset — this captures effects that a phase-locked average (the ERP above) would partly wash
+out, since power changes don't require every trial to share the exact same phase.
+
+### 5. Inter-trial phase coherence (ITC)
+
+![Inter-trial coherence](results/figures/sub-01_itc.png)
+
+Phase consistency across trials, independent of amplitude. There's a strong, well-localized
+band of high coherence in the same low-frequency, early-latency region (roughly 0–0.3 s,
+below ~15 Hz) — the response isn't just larger in that window, the trials are also
+firing in phase with each other there, which is a different (and complementary) claim than
+the power result alone makes.
+
+### 6. Classification
+
+Cross-validated (5-fold) LDA accuracy on this run: **28.05% (± 4.13%)**, using mu/beta
+(8–30 Hz) band power per channel as features, decoding all six of the sample dataset's event
+codes (auditory/visual left/right, smiley, button-press). This is near chance for a 6-way
+problem — expected, since this dataset has no motor-imagery structure for the mu/beta features
+to actually decode. The classifier module was built and cross-validated against the intended
+motor-imagery dataset separately (see the [Dataset](#dataset) section); this run's number
+demonstrates that the classification stage executes correctly end-to-end, not that the model
+is accurate on data it was never meant to decode.
+
+### Known Limitations
+
+Artifact rejection in this pipeline is not equally verifiable across artifact types. Eye-blink
+components have a genuine independent check: a real recorded EOG channel to correlate ICA
+components against. Cardiac and muscle components have no equivalent — this pipeline is
+EEG-only, and MNE's usual "synthesize an ECG reference from MEG channels" fallback isn't
+available either (confirmed directly: attempting it raises `ValueError: Generating an
+artificial ECG channel can only be done for MEG data`). Cardiac/muscle component decisions
+in this pipeline rely on ICA's own diagnostics (topography, spectrum) alone, with no
+ground-truth signal to verify against — a real, named gap rather than an oversight.
+
+## What I Learned
+
+- **Averaging is doing real statistical work, not just "taking the mean."** A single trial's
+  EEG is unreadable noise; a few hundred averaged trials reveal a clean, structured waveform.
+  The mechanism is a signal-to-noise argument, not magic: a true stimulus-locked response
+  survives averaging intact because it's identical on every trial, while background noise is
+  uncorrelated trial-to-trial and shrinks toward zero roughly as 1/√N.
+
+- **Amplitude rejection and ICA solve genuinely different problems, and the order between
+  them matters.** Amplitude thresholding is a blunt, whole-trial tool — it can only keep or
+  discard an entire epoch. ICA can surgically remove one specific artifact source from an
+  otherwise-usable trial. Running rejection first isn't arbitrary ordering: it removes the
+  worst whole-trial contamination before ICA has to spend its decomposition fitting components
+  to data that was always going to be thrown away.
+
+- **Power and phase-consistency are different claims about the same effect, and conflating
+  them would be a mistake.** The TFR and ITC results above look similar at a glance (both
+  highlight the same early, low-frequency window) but they answer different questions — power
+  says the signal got bigger there; coherence says the trials are agreeing on timing there.
+  A real effect usually shows up in both, which is itself informative.
+
+- **A config-driven pipeline is a discipline that has to be actively maintained, not a
+  one-time setup.** It was genuinely tempting more than once to add a new parameter directly
+  into a function call rather than route it through `config.yaml` — every time that temptation
+  won, it would have quietly broken the property that every processing decision this pipeline
+  makes is visible and changeable in one place.
