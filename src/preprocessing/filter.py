@@ -10,13 +10,39 @@ from src.preprocessing.loader import load_raw
 from src.preprocessing.epoching import make_epochs
 
 def apply_filters(raw: mne.io.Raw, l_freq: float, h_freq: float, notch_freq: float) -> mne.io.Raw:
-    #Notch first: line noise is a narrow, high-amplitude signal that should be removed so that the bandpass filter does not have to deal with it. The bandpass filter is then applied to remove low and high frequency noise.
-    #This order of filtering is important as in cases where the h_freq is set to a value greater than 60 Hz, the bandpass filter will not remove the line noise at 60 Hz, which can then be amplified by the bandpass filter and cause artifacts in the data.
-    #So to prevent more noise in the data, the notch filter is applied first
+    """Remove power-line hum and out-of-band drift/noise from a Raw signal.
+
+    Notch-filters first, then bandpass-filters. Order matters: line noise
+    is a narrow, high-amplitude signal, and if h_freq is set above the
+    line frequency (e.g. 60 Hz), the bandpass filter alone won't remove
+    it -- worse, its own passband can pass that noise through mostly
+    intact, leaving it to contaminate everything downstream. Notching it
+    out first means the bandpass filter only ever has to deal with
+    already-clean broadband signal.
+
+    Args:
+        raw: Raw signal to filter. Mutated and returned (not copied).
+        l_freq: Bandpass low cutoff in Hz -- removes slow drift below this.
+        h_freq: Bandpass high cutoff in Hz -- removes noise above this.
+        notch_freq: Power-line frequency to notch out (60 Hz in the US,
+            50 Hz in Europe).
+
+    Returns:
+        The same Raw object, filtered in place.
+    """
     raw.notch_filter(notch_freq)
     raw.filter(l_freq, h_freq)
     return raw
 
 def save_processed(epochs: mne.Epochs, out_path: str) -> None:
+    """Save processed epochs to disk, creating parent directories as needed.
+
+    Args:
+        epochs: Cleaned epochs to persist (typically post-ICA).
+        out_path: Destination .fif path. Overwrites any existing file at
+            this path -- callers that want provenance tracking of what
+            produced a given file should also write a sidecar record
+            (see pipeline.py's provenance functions).
+    """
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     epochs.save(out_path, overwrite=True)
