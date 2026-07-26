@@ -1,9 +1,23 @@
 # EEG Preprocessing & Analysis Pipeline
 
+![Python](https://img.shields.io/badge/python-3.12%2B-blue)
+![MNE-Python](https://img.shields.io/badge/MNE--Python-1.12-orange)
+![Status](https://img.shields.io/badge/status-complete-brightgreen)
+
 An end-to-end EEG signal-processing pipeline built in MNE-Python — raw data loading through
 filtering, epoching, artifact rejection, ICA, ERP/time-frequency analysis, and motor-imagery
 classification. Built as a portfolio project demonstrating the core preprocessing and analysis
 skills used in BCI/neurotech research and engineering roles.
+
+## Contents
+- [What This Is](#what-this-is-and-why-it-exists)
+- [Example Output](#example-output)
+- [Pipeline Modules](#pipeline-modules)
+- [Repository Structure](#repository-structure)
+- [Setup](#setup)
+- [Running the Pipeline](#running-the-pipeline)
+- [Dataset](#dataset)
+- [Testing](#testing)
 
 ## What this is and why it exists
 
@@ -12,6 +26,15 @@ independently, to demonstrate real, incremental engineering work rather than one
 uncommitted dump of code. Every processing parameter — filter cutoffs, epoch windows, ICA
 settings, classifier folds — is driven by `config.yaml`, not hardcoded across files, so the
 entire pipeline can be re-run against a different dataset or parameter set by editing one file.
+
+## Example Output
+
+![PSD before and after filtering](results/figures/psd_before_after.png)
+
+Power spectral density of the MNE sample dataset's EEG channels, before and after the
+pipeline's notch + bandpass filter stage. The 1–40 Hz passband edges are visible as sharp
+transitions, and power outside that band (including 60 Hz line noise) drops off steeply once
+filtered.
 
 ## Pipeline Modules
 
@@ -37,6 +60,33 @@ entire pipeline can be re-run against a different dataset or parameter set by ed
 - **M9 — Classification (`src/analysis/classifier.py`):** extracts mu/beta band-power features
   per trial and cross-validates an LDA decoder — the motor-imagery / BCI-relevant capstone of
   the pipeline.
+
+## Repository Structure
+
+```
+eeg-project/
+├── pipeline.py                   # orchestrator -- reads config.yaml, runs full pipeline
+├── config.yaml                   # single source of truth for all parameters
+├── src/
+│   ├── preprocessing/
+│   │   ├── loader.py             # M1 -- load_raw, inspect_raw
+│   │   ├── filter.py             # M2 -- apply_filters, save_processed
+│   │   ├── epoching.py           # M3 -- make_epochs
+│   │   ├── artifacts.py          # M4 -- mark_bad_channels, reject_by_amplitude, log_rejection
+│   │   └── ica.py                # M5 -- fit_ica, auto_detect_eog, apply_ica
+│   ├── analysis/
+│   │   ├── features.py           # M6-M8 -- band_power, compute_erp, compare_conditions,
+│   │   │                         #          compute_tfr, compute_itc
+│   │   └── classifier.py         # M9 -- extract_band_power_features, decode_with_lda
+│   └── visualization/
+│       └── plot.py               # plot_erp, plot_topomap, plot_psd
+├── notebooks/                     # one exploratory notebook per milestone (M1-M9)
+├── tests/                          # pytest suite, mirrors src/
+├── data/                            # gitignored -- local raw/processed EEG data
+└── results/
+    ├── figures/                      # generated + selectively committed portfolio figures
+    └── reports/
+```
 
 ## Setup
 
@@ -85,21 +135,6 @@ band-power features and LDA decoder are actually built and validated against. Ru
 pipeline (`pipeline.py`) against the sample dataset instead will still execute end-to-end, but
 classifier accuracy near chance is expected there, since that dataset has no motor-imagery
 conditions to decode.
-
-## Project structure
-
-```
-config.yaml            pipeline parameters
-pipeline.py             CLI entry point: preprocess -> analyze -> classify -> visualize, resumable
-src/
-  preprocessing/        loader, filter, epoching, artifact rejection, ICA
-  analysis/              band power, ERP, time-frequency, ITC, LDA classifier
-  visualization/         ERP/topomap/PSD plotting
-notebooks/               one exploratory notebook per milestone
-tests/                    pytest suite, mirrors src/
-data/                     gitignored; local raw/processed EEG data
-results/                  generated figures and reports (figures are committed selectively)
-```
 
 ## Testing
 
