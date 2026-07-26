@@ -55,10 +55,16 @@ def test_pipeline_run_end_to_end(tmp_path):
 def test_run_second_call_skips_preprocessing(tmp_path, monkeypatch, synthetic_raw):
     raw_path = tmp_path / "raw" / "sub-resume_raw.fif"
     raw_path.parent.mkdir(parents=True, exist_ok=True)
-    _add_correlated_eog(synthetic_raw).save(str(raw_path), overwrite=True)
+    raw = _add_correlated_eog(synthetic_raw)
+    # classifier stage needs more than one trial per class in every CV fold's
+    # training split; conftest's synthetic_raw only cycles each event code
+    # twice, so stack 3 copies end-to-end to get 6 trials/class.
+    raw = mne.concatenate_raws([raw.copy() for _ in range(3)])
+    raw.save(str(raw_path), overwrite=True)
 
     cfg = _cfg_with_tmp_paths(tmp_path)
     cfg["preprocessing"]["ica"]["n_components"] = 4  # synthetic_raw has 8 EEG channels; 20 (real-data default) would raise
+    cfg["classifier"]["cv_folds"] = 2  # keep folds small even with the tripled trial count above
 
     pipeline.run("sub-resume", str(raw_path), cfg)
 

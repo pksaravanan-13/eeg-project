@@ -12,6 +12,7 @@ from src.preprocessing.filter import load_raw, apply_filters, make_epochs, save_
 from src.preprocessing.artifacts import mark_bad_channels, reject_by_amplitude, log_rejection
 from src.preprocessing.ica import fit_ica, auto_detect_eog, apply_ica
 from src.analysis.features import band_power, compute_erp, compare_conditions, compute_tfr, compute_itc
+from src.analysis.classifier import extract_band_power_features, decode_with_lda
 from src.visualization.plot import plot_erp, plot_topomap, plot_psd
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,17 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
     )
     tfr = compute_tfr(epochs_clean, freqs=tfr_freqs, n_cycles=tfr_freqs / 2.0)
     itc = compute_itc(epochs_clean, freqs=tfr_freqs, n_cycles=tfr_freqs / 2.0)
+
+    # --- Classification ---
+    clf_cfg = cfg["classifier"]
+    clf_features = extract_band_power_features(
+        epochs_clean, fmin=clf_cfg["feature_fmin"], fmax=clf_cfg["feature_fmax"]
+    )
+    clf_labels = epochs_clean.events[:, -1]
+    clf_scores = decode_with_lda(clf_features, clf_labels, n_splits=clf_cfg["cv_folds"])
+    # Cross-validated rather than train==test accuracy, so the number isn't
+    # inflated by scoring trials the classifier already saw.
+    logger.info(f"[{subject}] classifier accuracy: {clf_scores.mean():.2%} (+/- {clf_scores.std():.2%})")
 
     # --- Visualization (resumable) ---
     fig_dir = Path(paths["figures"])
