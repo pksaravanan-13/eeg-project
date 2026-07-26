@@ -12,6 +12,9 @@ preprocessing:
   notch_freq: 60.0    # power line noise Hz (US = 60, EU = 50)
   epoch_tmin: -0.2    # seconds before event
   epoch_tmax: 0.8     # seconds after event
+  ica:
+    n_components: 20   # see src/preprocessing/ica.py docstring for the channel-count rationale
+    random_state: 42   # fixed seed -- reproducible decomposition run to run
 
 analysis:
   frequency_bands:
@@ -20,6 +23,19 @@ analysis:
     alpha: [8, 13]
     beta:  [13, 30]
     gamma: [30, 40]
+  conditions:              # event tags compare_conditions averages separately -- see src/preprocessing/epoching.py's DEFAULT_EVENT_ID
+    - auditory/left
+    - auditory/right
+    - visual/left
+    - visual/right
+  tfr_freq_min: 4
+  tfr_freq_max: 40
+  tfr_freq_step: 1
+
+classifier:
+  cv_folds: 5           # cross-validation folds for decode_with_lda
+  feature_fmin: 8.0     # mu band lower bound -- see src/analysis/classifier.py's extract_band_power_features docstring
+  feature_fmax: 30.0    # beta band upper bound
 
 subjects:
   - sub-01

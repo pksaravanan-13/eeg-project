@@ -10,7 +10,9 @@ import mne
 
 from src.preprocessing.filter import load_raw, apply_filters, make_epochs, save_processed
 from src.preprocessing.artifacts import mark_bad_channels, reject_by_amplitude, log_rejection
-from src.analysis.features import band_power, compute_erp, compute_tfr
+from src.preprocessing.ica import fit_ica, auto_detect_eog, apply_ica
+from src.analysis.features import band_power, compute_erp, compare_conditions, compute_tfr, compute_itc
+from src.analysis.classifier import extract_band_power_features, decode_with_lda
 from src.visualization.plot import plot_erp, plot_topomap, plot_psd
 
 logger = logging.getLogger(__name__)
@@ -80,6 +82,7 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
         "epoch_tmax": pp["epoch_tmax"],
         "bad_channels": sorted(bad_channels),
         "reject_thresh": REJECT_THRESH,
+        "ica": pp["ica"],
     }
     input_hash = _hash_file(raw_file)
 
@@ -96,6 +99,12 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
         epochs_clean = reject_by_amplitude(epochs, REJECT_THRESH)
         log_rejection(epochs, epochs_clean)
 
+        # ICA runs after amplitude rejection so its decomposition isn't spent
+        # fitting components to trials that were always getting thrown out.
+        ica = fit_ica(epochs_clean, n_components=pp["ica"]["n_components"], random_state=pp["ica"]["random_state"])
+        eog_indices = auto_detect_eog(ica, epochs_clean)
+        epochs_clean = apply_ica(ica, epochs_clean, exclude=eog_indices)
+
         save_processed(epochs_clean, str(processed_path))
         _write_provenance(processed_path, current_params, input_hash, raw_file)
         logger.info(f"[{subject}] preprocessing complete -> {processed_path}")
@@ -104,10 +113,25 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
     bands = {k: tuple(v) for k, v in cfg["analysis"]["frequency_bands"].items()}
     powers = band_power(epochs_clean, bands)
     erp = compute_erp(epochs_clean)
+    condition_erps = compare_conditions(epochs_clean, conditions=cfg["analysis"]["conditions"])
     # n_cycles scaled with frequency (not a fixed 7) — a fixed n_cycles=7 needs a 1.75s
     # wavelet window at 4 Hz, longer than this pipeline's ~1s epochs, and crashes compute_tfr.
-    tfr_freqs = np.arange(4, 40, 1)
+    tfr_freqs = np.arange(
+        cfg["analysis"]["tfr_freq_min"], cfg["analysis"]["tfr_freq_max"], cfg["analysis"]["tfr_freq_step"]
+    )
     tfr = compute_tfr(epochs_clean, freqs=tfr_freqs, n_cycles=tfr_freqs / 2.0)
+    itc = compute_itc(epochs_clean, freqs=tfr_freqs, n_cycles=tfr_freqs / 2.0)
+
+    # --- Classification ---
+    clf_cfg = cfg["classifier"]
+    clf_features = extract_band_power_features(
+        epochs_clean, fmin=clf_cfg["feature_fmin"], fmax=clf_cfg["feature_fmax"]
+    )
+    clf_labels = epochs_clean.events[:, -1]
+    clf_scores = decode_with_lda(clf_features, clf_labels, n_splits=clf_cfg["cv_folds"])
+    # Cross-validated rather than train==test accuracy, so the number isn't
+    # inflated by scoring trials the classifier already saw.
+    logger.info(f"[{subject}] classifier accuracy: {clf_scores.mean():.2%} (+/- {clf_scores.std():.2%})")
 
     # --- Visualization (resumable) ---
     fig_dir = Path(paths["figures"])
