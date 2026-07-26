@@ -23,6 +23,14 @@ analysis:
     alpha: [8, 13]
     beta:  [13, 30]
     gamma: [30, 40]
+  conditions:              # event tags compare_conditions averages separately -- see src/preprocessing/epoching.py's DEFAULT_EVENT_ID
+    - auditory/left
+    - auditory/right
+    - visual/left
+    - visual/right
+  tfr_freq_min: 4
+  tfr_freq_max: 40
+  tfr_freq_step: 1
 
 subjects:
   - sub-01

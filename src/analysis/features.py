@@ -48,7 +48,7 @@ def compute_tfr(epochs: mne.Epochs, freqs: np.ndarray, n_cycles: int = 7) -> mne
     # question from power, computed via its own return_itc=True call in the notebook.
 
 
-def compute_itc(epochs: mne.Epochs, freqs: np.ndarray = None) -> mne.time_frequency.AverageTFR:
+def compute_itc(epochs: mne.Epochs, freqs: np.ndarray = None, n_cycles=None) -> mne.time_frequency.AverageTFR:
     # ITC has to be computed from epochs, not an averaged Evoked: averaging
     # collapses the trial dimension, and per-trial phase is exactly what's
     # being compared here -- once the trials are gone there's nothing left
@@ -56,7 +56,13 @@ def compute_itc(epochs: mne.Epochs, freqs: np.ndarray = None) -> mne.time_freque
     if freqs is None:
         freqs = np.arange(4, 40, 1)  # same range compute_tfr() defaults its callers to, so power and ITC line up cell-for-cell
 
-    n_cycles = 7  # same as compute_tfr() -- keeps both at identical time/frequency resolution
+    # n_cycles defaults to 7, same as compute_tfr()'s default, keeping both at
+    # identical time/frequency resolution when neither caller overrides it. A
+    # fixed 7 needs a 1.75s wavelet window at 4 Hz, longer than some epochs --
+    # pass a frequency-scaled n_cycles (e.g. freqs / 2.0, as compute_tfr's
+    # callers do) explicitly when the epoch window is short.
+    if n_cycles is None:
+        n_cycles = 7
 
     # tfr_morlet tracks the full complex wavelet coefficient per trial when
     # return_itc=True, then averages unit-length phase vectors across

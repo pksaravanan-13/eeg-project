@@ -11,7 +11,7 @@ import mne
 from src.preprocessing.filter import load_raw, apply_filters, make_epochs, save_processed
 from src.preprocessing.artifacts import mark_bad_channels, reject_by_amplitude, log_rejection
 from src.preprocessing.ica import fit_ica, auto_detect_eog, apply_ica
-from src.analysis.features import band_power, compute_erp, compute_tfr
+from src.analysis.features import band_power, compute_erp, compare_conditions, compute_tfr, compute_itc
 from src.visualization.plot import plot_erp, plot_topomap, plot_psd
 
 logger = logging.getLogger(__name__)
@@ -112,10 +112,14 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
     bands = {k: tuple(v) for k, v in cfg["analysis"]["frequency_bands"].items()}
     powers = band_power(epochs_clean, bands)
     erp = compute_erp(epochs_clean)
+    condition_erps = compare_conditions(epochs_clean, conditions=cfg["analysis"]["conditions"])
     # n_cycles scaled with frequency (not a fixed 7) — a fixed n_cycles=7 needs a 1.75s
     # wavelet window at 4 Hz, longer than this pipeline's ~1s epochs, and crashes compute_tfr.
-    tfr_freqs = np.arange(4, 40, 1)
+    tfr_freqs = np.arange(
+        cfg["analysis"]["tfr_freq_min"], cfg["analysis"]["tfr_freq_max"], cfg["analysis"]["tfr_freq_step"]
+    )
     tfr = compute_tfr(epochs_clean, freqs=tfr_freqs, n_cycles=tfr_freqs / 2.0)
+    itc = compute_itc(epochs_clean, freqs=tfr_freqs, n_cycles=tfr_freqs / 2.0)
 
     # --- Visualization (resumable) ---
     fig_dir = Path(paths["figures"])
