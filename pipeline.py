@@ -136,7 +136,10 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
     fig_dir = Path(paths["figures"])
     fig_specs = {
         "erp": (fig_dir / f"{subject}_erp.png", lambda p: plot_erp(erp, out_path=str(p))),
-        "topo": (fig_dir / f"{subject}_topo.png", lambda p: plot_topomap(erp, times=[0.1, 0.2, 0.3], out_path=str(p))),
+        "topo": (
+            fig_dir / f"{subject}_topo.png",
+            lambda p: plot_topomap(erp, times=cfg["analysis"]["topomap_times"], out_path=str(p)),
+        ),
         "psd": (fig_dir / f"{subject}_psd.png", lambda p: plot_psd(epochs_clean, out_path=str(p))),
         "tfr": (fig_dir / f"{subject}_tfr.png", lambda p: plot_tfr(tfr, baseline=(None, 0), out_path=str(p))),
         "itc": (

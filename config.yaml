@@ -32,6 +32,7 @@ analysis:
   tfr_freq_min: 4
   tfr_freq_max: 40
   tfr_freq_step: 1
+  topomap_times: [0.1, 0.2, 0.3]   # seconds post-event to snapshot in the topomap figure
 
 classifier:
   cv_folds: 5           # cross-validation folds for decode_with_lda
