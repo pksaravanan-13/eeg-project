@@ -63,7 +63,7 @@ def test_run_second_call_skips_preprocessing(tmp_path, monkeypatch, synthetic_ra
     raw.save(str(raw_path), overwrite=True)
 
     cfg = _cfg_with_tmp_paths(tmp_path)
-    cfg["preprocessing"]["ica"]["n_components"] = 4  # synthetic_raw has 8 EEG channels; 20 (real-data default) would raise
+    cfg["preprocessing"]["ica"]["n_components"] = 4  # fixed count for a deterministic/fast fit on tiny synthetic data
     cfg["classifier"]["cv_folds"] = 2  # keep folds small even with the tripled trial count above
 
     pipeline.run("sub-resume", str(raw_path), cfg)

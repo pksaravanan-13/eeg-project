@@ -1,7 +1,7 @@
 import mne
 
 
-def fit_ica(epochs: mne.Epochs, n_components: int = 20, random_state: int = 42) -> mne.preprocessing.ICA:
+def fit_ica(epochs: mne.Epochs, n_components: float = 0.99, random_state: int = 42) -> mne.preprocessing.ICA:
     """Fit an ICA decomposition to epoched EEG data.
 
     Separates the signal into statistically independent components so
@@ -13,11 +13,11 @@ def fit_ica(epochs: mne.Epochs, n_components: int = 20, random_state: int = 42) 
             whole-trial contamination removed (reject_by_amplitude())
             first, so the decomposition isn't spent fitting components
             to trials that were always getting thrown out.
-        n_components: Number of components to fit. Defaults to 20:
-            roughly a third of this pipeline's typical ~60 EEG channels
-            -- enough to separate blink/muscle/cardiac from brain
-            activity without also chasing pure sensor noise into its
-            own component.
+        n_components: Either a fraction of explained variance in (0, 1]
+            (default 0.99) or a fixed component count as an int. The
+            fraction form self-adjusts to whatever channel count/rank
+            the montage has, so it doesn't need re-tuning per dataset
+            the way a fixed integer does.
         random_state: Seed for reproducibility. Defaults to 42 because
             ICA's optimization starts from a random point and can
             otherwise converge to differently-ordered components on

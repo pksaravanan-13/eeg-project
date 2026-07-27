@@ -14,7 +14,7 @@ preprocessing:
   epoch_tmax: 0.8     # seconds after event
   reject_threshold_uv: 150.0   # peak-to-peak amplitude rejection cutoff, in microvolts
   ica:
-    n_components: 20   # see src/preprocessing/ica.py docstring for the channel-count rationale
+    n_components: 0.99 # fraction of explained variance -- self-adjusts to montage/rank, see src/preprocessing/ica.py docstring
     random_state: 42   # fixed seed -- reproducible decomposition run to run
 
 analysis:
