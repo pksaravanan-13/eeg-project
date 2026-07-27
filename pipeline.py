@@ -17,8 +17,6 @@ from src.visualization.plot import plot_erp, plot_topomap, plot_psd, plot_tfr, p
 
 logger = logging.getLogger(__name__)
 
-REJECT_THRESH = {"eeg": 150e-6}
-
 
 def load_config(path: str = "config.yaml") -> dict:
     with open(path) as f:
@@ -75,13 +73,14 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
 
     # --- Preprocessing (resumable) ---
     processed_path = Path(paths["processed_data"]) / f"{subject}-epo.fif"
+    reject_thresh = {"eeg": pp["reject_threshold_uv"] * 1e-6}
     current_params = {
         "bandpass": pp["bandpass"],
         "notch_freq": pp["notch_freq"],
         "epoch_tmin": pp["epoch_tmin"],
         "epoch_tmax": pp["epoch_tmax"],
         "bad_channels": sorted(bad_channels),
-        "reject_thresh": REJECT_THRESH,
+        "reject_thresh": reject_thresh,
         "ica": pp["ica"],
     }
     input_hash = _hash_file(raw_file)
@@ -96,7 +95,7 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
         if bad_channels:
             raw = mark_bad_channels(raw, bad_channels)
         epochs = make_epochs(raw, pp["epoch_tmin"], pp["epoch_tmax"])
-        epochs_clean = reject_by_amplitude(epochs, REJECT_THRESH)
+        epochs_clean = reject_by_amplitude(epochs, reject_thresh)
         log_rejection(epochs, epochs_clean)
 
         # ICA runs after amplitude rejection so its decomposition isn't spent
