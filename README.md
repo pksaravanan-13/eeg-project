@@ -81,7 +81,7 @@ eeg-project/
 │   │   │                         #          compute_tfr, compute_itc
 │   │   └── classifier.py         # M9 -- extract_band_power_features, decode_with_lda
 │   └── visualization/
-│       └── plot.py               # plot_erp, plot_topomap, plot_psd
+│       └── plot.py               # plot_erp, plot_topomap, plot_psd, plot_tfr, plot_itc
 ├── notebooks/                     # one exploratory notebook per milestone (M1-M9)
 ├── tests/                          # pytest suite, mirrors src/
 ├── data/                            # gitignored -- local raw/processed EEG data
