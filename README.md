@@ -4,10 +4,12 @@
 ![MNE-Python](https://img.shields.io/badge/MNE--Python-1.12-orange)
 ![Status](https://img.shields.io/badge/status-complete-brightgreen)
 
-An end-to-end EEG signal-processing pipeline built in MNE-Python — raw data loading through
-filtering, epoching, artifact rejection, ICA, ERP/time-frequency analysis, and motor-imagery
-classification. Built as a portfolio project demonstrating the core preprocessing and analysis
-skills used in BCI/neurotech research and engineering roles.
+Built by Pawan Keshav Saravanan, a Neuroscience/Biochemistry undergrad, as self-directed
+preparation for BCI/neurotech research — an end-to-end EEG signal-processing pipeline in
+MNE-Python — raw data loading through filtering, epoching, artifact rejection, ICA,
+ERP/time-frequency analysis, and motor-imagery classification. Built as a portfolio project
+demonstrating the core preprocessing and analysis skills used in BCI/neurotech research and
+engineering roles.
 
 ## Contents
 - [What This Is](#what-this-is-and-why-it-exists)
@@ -197,7 +199,9 @@ the power result alone makes.
 
 ### 6. Classification
 
-Cross-validated (5-fold) LDA accuracy on this run: **28.05% (± 4.13%)**, using mu/beta
+Cross-validated (5-fold) LDA accuracy on this run is **28.05% (± 4.13%)** — expected to sit
+near chance on this particular dataset for the reason explained just below, not a sign the
+classifier is broken. Read on before judging the number. It uses mu/beta
 (8–30 Hz) band power per channel as features, decoding all six of the sample dataset's event
 codes (auditory/visual left/right, smiley, button-press). This is near chance for a 6-way
 problem — expected, since this dataset has no motor-imagery structure for the mu/beta features
