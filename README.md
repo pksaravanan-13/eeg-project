@@ -105,6 +105,13 @@ points back to it.
 
 ## Running the pipeline
 
+No raw data ships with this repo (`data/` is gitignored) -- fetch MNE's bundled sample dataset
+first, which downloads once and prints the exact file path to use below:
+
+```bash
+python -c "import mne; print(mne.datasets.sample.data_path() / 'MEG' / 'sample' / 'sample_audvis_raw.fif')"
+```
+
 `pipeline.py` chains preprocessing (load → filter → epoch → reject → ICA) → analysis (band
 power, ERP, condition comparison, time-frequency, inter-trial coherence) → classification
 (band-power features, cross-validated LDA) → visualization for one subject, and is resumable: it
@@ -113,11 +120,11 @@ writes a JSON provenance sidecar next to each processed file recording exactly w
 produced it.
 
 ```bash
-# Single subject
-python pipeline.py --subject sub-01 --file path/to/raw.fif --bad-channels "EEG 053"
+# Single subject -- --file is the path printed by the command above
+python pipeline.py --subject sub-01 --file path/to/sample_audvis_raw.fif --bad-channels "EEG 053"
 
 # Recompute even if cached output looks up to date
-python pipeline.py --subject sub-01 --file path/to/raw.fif --force
+python pipeline.py --subject sub-01 --file path/to/sample_audvis_raw.fif --force
 
 # Batch mode: iterate config.yaml's `subjects` list, resolving each subject's file
 # under paths.raw_data as "{subject}_raw.fif"

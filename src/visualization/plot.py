@@ -64,11 +64,18 @@ def plot_tfr(power: mne.time_frequency.AverageTFR, baseline: tuple, mode: str = 
             readable.
         out_path: If given, saves the figure here instead of displaying it.
     """
-    fig = power.plot(baseline=baseline, mode=mode, show=False)
-    if isinstance(fig, list):
+    figs = power.plot(baseline=baseline, mode=mode, show=False)
+    if isinstance(figs, list):
         # Some MNE versions return a list of figures (one per pick) instead
         # of a single figure -- normalize so _save_or_show gets one either way.
-        fig = fig[0]
+        # Close the rest explicitly: leaving dozens of per-channel Tk figures
+        # open (one per EEG channel) exhausts the backend's pixmap resources
+        # and crashes the process on a long-enough channel list.
+        fig = figs[0]
+        for leftover in figs[1:]:
+            plt.close(leftover)
+    else:
+        fig = figs
 
     _save_or_show(fig, out_path)
 

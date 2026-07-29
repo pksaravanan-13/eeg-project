@@ -4,6 +4,18 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
+import matplotlib
+# This is a headless batch entry point -- every figure below is saved via
+# show=False, never displayed interactively. The default interactive backend
+# (TkAgg on Windows) still allocates real GUI/window-manager resources per
+# figure though, and plot_tfr/plot_itc create one figure per channel
+# internally -- enough of them in a row exhausts those resources and crashes
+# the process (confirmed: "Fail to allocate bitmap" mid-run). Agg has no such
+# ceiling since it never touches a window manager. Notebooks import plot.py
+# directly instead of pipeline.py, so their interactive/inline display is
+# unaffected by this.
+matplotlib.use("Agg")
+
 import yaml
 import numpy as np
 import mne
