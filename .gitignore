@@ -246,3 +246,4 @@ VIDEOS.md
 # AI tooling config, not part of the EEG pipeline itself
 .claude/settings.json
 CLAUDE.md
+.codex/
