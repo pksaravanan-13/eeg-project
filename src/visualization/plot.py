@@ -49,8 +49,18 @@ def plot_psd(epochs: mne.Epochs, out_path: str = None) -> None:
     _save_or_show(fig, out_path)
 
 
-def plot_tfr(power: mne.time_frequency.AverageTFR, baseline: tuple, mode: str = "logratio", out_path: str = None) -> None:
-    """Plot time-frequency power relative to a pre-stimulus baseline.
+def plot_tfr(
+    power: mne.time_frequency.AverageTFR,
+    baseline: tuple,
+    mode: str = "logratio",
+    channel: str = None,
+    out_path: str = None,
+) -> None:
+    """Plot time-frequency power of one channel relative to a pre-stimulus baseline.
+
+    Only the one channel is passed to MNE as picks, so exactly one figure is
+    created. Plotting all channels would build one figure per channel first,
+    which ran out of memory on the EEG+MEG sample recording.
 
     Args:
         power: TFR power, e.g. from compute_tfr().
@@ -62,21 +72,15 @@ def plot_tfr(power: mne.time_frequency.AverageTFR, baseline: tuple, mode: str = 
             over plain percent-change because the log keeps increases and
             decreases symmetric in magnitude, so the color scale stays
             readable.
+        channel: Name of the channel to plot. pipeline.py passes
+            config.yaml's analysis.tfr_plot_channel. Defaults to the first
+            channel in power, which is what this function plotted before it
+            took a channel argument.
         out_path: If given, saves the figure here instead of displaying it.
     """
-    figs = power.plot(baseline=baseline, mode=mode, show=False)
-    if isinstance(figs, list):
-        # Some MNE versions return a list of figures (one per pick) instead
-        # of a single figure -- normalize so _save_or_show gets one either way.
-        # Close the rest explicitly: leaving dozens of per-channel Tk figures
-        # open (one per EEG channel) exhausts the backend's pixmap resources
-        # and crashes the process on a long-enough channel list.
-        fig = figs[0]
-        for leftover in figs[1:]:
-            plt.close(leftover)
-    else:
-        fig = figs
-
+    figs = power.plot(picks=[channel or power.ch_names[0]], baseline=baseline, mode=mode, show=False)
+    # MNE returns a list of figures (one per pick); with one pick it has one element.
+    fig = figs[0] if isinstance(figs, list) else figs
     _save_or_show(fig, out_path)
 
 
