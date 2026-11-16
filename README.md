@@ -4,7 +4,7 @@
 ![MNE-Python](https://img.shields.io/badge/MNE--Python-1.12-orange)
 ![Status](https://img.shields.io/badge/status-complete-brightgreen)
 
-Built by Pawan Keshav Saravanan, a Neuroscience/Biochemistry undergrad, as self-directed
+Built by Pawan Keshav Saravanan, an undergraduate, as self-directed
 preparation for BCI/neurotech research — an end-to-end EEG signal-processing pipeline in
 MNE-Python — raw data loading through filtering, epoching, artifact rejection, ICA,
 ERP/time-frequency analysis, and motor-imagery classification. Built as a portfolio project
@@ -21,6 +21,7 @@ engineering roles.
 - [Dataset](#dataset)
 - [Testing](#testing)
 - [Results Walkthrough](#results-walkthrough)
+- [How This Was Built](#how-this-was-built)
 - [What I Learned](#what-i-learned)
 
 ## What this is and why it exists
@@ -124,7 +125,7 @@ produced it.
 python pipeline.py --subject sub-01 --file path/to/sample_audvis_raw.fif --bad-channels "EEG 053"
 
 # Recompute even if cached output looks up to date
-python pipeline.py --subject sub-01 --file path/to/sample_audvis_raw.fif --force
+python pipeline.py --subject sub-01 --file path/to/sample_audvis_raw.fif --bad-channels "EEG 053" --force
 
 # Batch mode: iterate config.yaml's `subjects` list, resolving each subject's file
 # under paths.raw_data as "{subject}_raw.fif"
@@ -138,14 +139,17 @@ folds, paths) live in `config.yaml`.
 
 Primary development dataset for M1 through M8: the MNE sample auditory/visual dataset (1
 subject, EEG+MEG combined, ~600 Hz, ~277 s, ~320 events across auditory/visual left/right
-conditions).
+conditions). The recording has 60 EEG, 1 EOG, 204 gradiometer, 102 magnetometer and 9 stimulus
+channels, and the pipeline keeps the MEG channels (see [Known Limitations](#known-limitations)).
 
-M9's motor-imagery classification uses the [PhysioNet EEGBCI](https://physionet.org/content/eegmmidb/1.0.0/)
-dataset — imagined left/right fist movement runs, which is the condition structure the mu/beta
-band-power features and LDA decoder are actually built and validated against. Running the full
-pipeline (`pipeline.py`) against the sample dataset instead will still execute end-to-end, but
-classifier accuracy near chance is expected there, since that dataset has no motor-imagery
-conditions to decode.
+M9's motor-imagery classification is built for the [PhysioNet EEGBCI](https://physionet.org/content/eegmmidb/1.0.0/)
+dataset — imagined left/right fist movement runs (4, 8, 12), the condition structure the mu/beta
+band-power features and LDA decoder are designed for. `group_decode_study.py` runs it on 15
+subjects (two classes, so chance is 50%): mean cross-validated accuracy 0.550 without cleaning
+and 0.532 with ICA cleaning, paired Wilcoxon p = 0.327, a null result at this sample size. Full
+report: [`results/reports/group_decode_study.md`](results/reports/group_decode_study.md).
+Running `pipeline.py` on the sample dataset still executes the classifier end-to-end, but on
+auditory/visual conditions rather than motor imagery (see [Classification](#6-classification)).
 
 ## Testing
 
@@ -179,17 +183,21 @@ trials outright.
 ![ERP waveform](results/figures/sub-01_erp.png)
 ![ERP topography at 0.1s, 0.2s, 0.3s](results/figures/sub-01_topo.png)
 
-The averaged EEG response (top panel of the waveform plot) shows a clear early deflection
-around 100 ms post-stimulus and a larger, broader deflection between roughly 150–250 ms —
-consistent with an early sensory response followed by a later cognitive/attention-related
-component. The topography at 0.1 s shows the response concentrated over left-frontal
-electrodes, spreading and changing polarity by 0.2–0.3 s.
+The averaged EEG response (top panel of the waveform plot, N = 289 epochs) shows a clear early
+deflection around 100 ms post-stimulus and a larger, broader deflection between roughly
+150–250 ms. This run reports only the timing and size of these deflections; it does not test
+what process produces them. One gradiometer trace in the MEG panel oscillates across the whole
+epoch; it has not been identified or marked bad (only `EEG 053` is). The topography figure is a
+**magnetometer** map (unit fT), because MNE's `plot_topomap` defaults to the first channel type
+present; at 0.1 s the field is concentrated over the left-frontal sensors and changes by
+0.2–0.3 s.
 
 ### 4. Time-frequency power (TFR)
 
 ![Time-frequency power](results/figures/sub-01_tfr.png)
 
-Power relative to the pre-stimulus baseline (log-ratio), across 4–39 Hz. The strongest,
+Power relative to the pre-stimulus baseline (log-ratio), across 4–39 Hz, for one channel:
+`MEG 0113`, a gradiometer (set by `analysis.tfr_plot_channel` in `config.yaml`). The strongest,
 most consistent increase sits in the low frequencies (below ~15 Hz) shortly after stimulus
 onset — this captures effects that a phase-locked average (the ERP above) would partly wash
 out, since power changes don't require every trial to share the exact same phase.
@@ -198,35 +206,45 @@ out, since power changes don't require every trial to share the exact same phase
 
 ![Inter-trial coherence](results/figures/sub-01_itc.png)
 
-Phase consistency across trials, independent of amplitude. There's a strong, well-localized
-band of high coherence in the same low-frequency, early-latency region (roughly 0–0.3 s,
-below ~15 Hz) — the response isn't just larger in that window, the trials are also
-firing in phase with each other there, which is a different (and complementary) claim than
-the power result alone makes.
+Phase consistency across trials, independent of amplitude. The figure is the mean over all
+365 channels (EEG, EOG, gradiometers and magnetometers together), not a single sensor. There's
+a strong band of high coherence in the same low-frequency, early-latency region (roughly
+0–0.3 s, below ~15 Hz) — the signal isn't just larger in that window, its phase is also
+consistent from trial to trial there, which is a different (and complementary) claim than the
+power result alone makes.
 
 ### 6. Classification
 
-Cross-validated (5-fold) LDA accuracy on this run is **31.86% (± 5.12%)** — expected to sit
-near chance on this particular dataset for the reason explained just below, not a sign the
-classifier is broken. Read on before judging the number. It uses mu/beta
-(8–30 Hz) band power per channel as features, decoding all six of the sample dataset's event
-codes (auditory/visual left/right, smiley, button-press). This is near chance for a 6-way
-problem — expected, since this dataset has no motor-imagery structure for the mu/beta features
-to actually decode. The classifier module was built and cross-validated against the intended
-motor-imagery dataset separately (see the [Dataset](#dataset) section); this run's number
-demonstrates that the classification stage executes correctly end-to-end, not that the model
-is accurate on data it was never meant to decode.
+Cross-validated (5-fold) LDA accuracy on this run is **31.86%**, with a standard deviation of
+**5.12 percentage points across the 5 folds** (population SD). Per-fold values are not logged by
+the pipeline. Features are mu/beta (8–30 Hz) band power per channel, including the MEG
+channels, decoding all six of the sample dataset's event codes (auditory/visual left/right,
+smiley, button-press; 58, 69, 68, 65, 14 and 15 epochs). Two reference levels: uniform chance
+for six classes is 16.67%, and always guessing the largest class (69 of 289) gives 23.88%. The
+mean is above both on this run. These are auditory/visual conditions, not motor imagery, and this
+run does not test what the features pick up; unequal class sizes and the inclusion of MEG
+channels both affect the number. The motor-imagery result is in the [Dataset](#dataset) section.
 
 ### Known Limitations
 
 Artifact rejection in this pipeline is not equally verifiable across artifact types. Eye-blink
 components have a genuine independent check: a real recorded EOG channel to correlate ICA
-components against. Cardiac and muscle components have no equivalent — this pipeline is
-EEG-only, and MNE's usual "synthesize an ECG reference from MEG channels" fallback isn't
-available either (confirmed directly: attempting it raises `ValueError: Generating an
-artificial ECG channel can only be done for MEG data`). Cardiac/muscle component decisions
-in this pipeline rely on ICA's own diagnostics (topography, spectrum) alone, with no
-ground-truth signal to verify against — a real, named gap rather than an oversight.
+components against. Cardiac and muscle components have no equivalent — ICA here is fitted on
+the EEG channels only (`picks="eeg"`), and MNE's "synthesize an ECG reference from MEG
+channels" fallback does not apply to an EEG-only decomposition (confirmed directly: attempting
+it raises `ValueError: Generating an artificial ECG channel can only be done for MEG data`).
+Cardiac/muscle component decisions rely on ICA's own diagnostics (topography, spectrum) alone,
+with no ground-truth signal to verify against.
+
+Only the ICA step is restricted to EEG. The other stages keep all channel types, so the
+classifier features and the ITC figure include the 306 MEG channels, the TFR figure is a
+gradiometer, and the topography is magnetometers. The MEG channels are not ICA-cleaned. Restricting
+the whole pipeline to EEG would change every downstream number and has not been done.
+
+## How this was built
+
+The code was built with AI coding assistance (Claude Code) and is reviewed week by week by
+Pawan Keshav Saravanan.
 
 ## What I Learned
 
