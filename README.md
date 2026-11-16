@@ -206,7 +206,7 @@ the power result alone makes.
 
 ### 6. Classification
 
-Cross-validated (5-fold) LDA accuracy on this run is **28.05% (± 4.13%)** — expected to sit
+Cross-validated (5-fold) LDA accuracy on this run is **31.86% (± 5.12%)** — expected to sit
 near chance on this particular dataset for the reason explained just below, not a sign the
 classifier is broken. Read on before judging the number. It uses mu/beta
 (8–30 Hz) band power per channel as features, decoding all six of the sample dataset's event
