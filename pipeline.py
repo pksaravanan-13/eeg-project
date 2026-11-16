@@ -8,9 +8,9 @@ import matplotlib
 # This is a headless batch entry point -- every figure below is saved via
 # show=False, never displayed interactively. The default interactive backend
 # (TkAgg on Windows) still allocates real GUI/window-manager resources per
-# figure though, and plot_tfr/plot_itc create one figure per channel
-# internally -- enough of them in a row exhausts those resources and crashes
-# the process (confirmed: "Fail to allocate bitmap" mid-run). Agg has no such
+# figure though -- enough of them in a row exhausts those resources and crashes
+# the process (confirmed: "Fail to allocate bitmap" mid-run, when plot_tfr still
+# created one figure per channel; it now creates one). Agg has no such
 # ceiling since it never touches a window manager. Notebooks import plot.py
 # directly instead of pipeline.py, so their interactive/inline display is
 # unaffected by this.
@@ -153,7 +153,12 @@ def run(subject: str, raw_file: str, cfg: dict, bad_channels: list = None, force
             lambda p: plot_topomap(erp, times=cfg["analysis"]["topomap_times"], out_path=str(p)),
         ),
         "psd": (fig_dir / f"{subject}_psd.png", lambda p: plot_psd(epochs_clean, out_path=str(p))),
-        "tfr": (fig_dir / f"{subject}_tfr.png", lambda p: plot_tfr(tfr, baseline=(None, 0), out_path=str(p))),
+        "tfr": (
+            fig_dir / f"{subject}_tfr.png",
+            lambda p: plot_tfr(
+                tfr, baseline=(None, 0), channel=cfg["analysis"]["tfr_plot_channel"], out_path=str(p)
+            ),
+        ),
         "itc": (
             fig_dir / f"{subject}_itc.png",
             lambda p: plot_itc(
